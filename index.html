@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f5f4ef">
+    <title>Cotizador DTF | UXIART</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            color-scheme: light;
+            --paper: #f5f4ef;
+            --white: #fffefa;
+            --ink: #202a27;
+            --muted: #747c76;
+            --line: #dfe1d9;
+            --green: #14745b;
+            --green-dark: #0d5945;
+            --mint: #e6f1eb;
+            --orange: #cf673b;
+            --radius: 8px;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-width: 320px; color: var(--ink); background: var(--paper); font-family: "DM Sans", sans-serif; }
+        button, input, select, textarea { font: inherit; }
+        button { cursor: pointer; }
+        .topbar { height: 68px; padding: 0 max(24px, calc((100vw - 1120px) / 2)); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: rgba(255,254,250,.72); }
+        .brand { display: flex; align-items: center; gap: 11px; font: 800 16px Manrope, sans-serif; letter-spacing: .04em; }
+        .brand-mark { display: grid; place-items: center; width: 31px; height: 31px; color: white; background: var(--green); border-radius: 7px; font: 700 13px "DM Mono", monospace; }
+        .top-note { color: var(--muted); font: 11px "DM Mono", monospace; letter-spacing: .02em; }
+        main { width: min(100% - 40px, 1120px); margin: 44px auto 72px; }
+        .intro { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 27px; }
+        .eyebrow { margin: 0 0 9px; color: var(--green); font: 500 11px "DM Mono", monospace; letter-spacing: .08em; text-transform: uppercase; }
+        h1 { margin: 0; font: 800 clamp(27px, 4vw, 38px)/1.1 Manrope, sans-serif; letter-spacing: 0; }
+        .intro-copy { max-width: 390px; margin: 0 0 2px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+        .layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(310px, .8fr); align-items: start; gap: 20px; }
+        .form-panel, .quote-panel { border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); }
+        .form-panel { padding: 26px 28px 28px; }
+        .section-heading { display: flex; align-items: center; gap: 11px; margin: 0 0 21px; font: 700 15px Manrope, sans-serif; }
+        .step { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%; background: var(--mint); color: var(--green-dark); font: 500 11px "DM Mono", monospace; }
+        .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 14px; }
+        .field { min-width: 0; }
+        .field.full { grid-column: 1 / -1; }
+        .design-list { display: grid; gap: 8px; }
+        .design-row { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 8px; }
+        .remove-design { width: 44px; min-height: 43px; padding: 0; border: 1px solid var(--line); border-radius: 5px; color: var(--muted); background: transparent; font-size: 20px; }
+        .remove-design:hover { color: #a43f2d; border-color: #d8a99d; background: #fcf4f1; }
+        .add-design { width: 100%; margin-top: 9px; }
+        label { display: block; margin-bottom: 7px; color: #424b46; font-size: 12px; font-weight: 600; }
+        input, select, textarea { width: 100%; min-height: 43px; padding: 10px 12px; border: 1px solid #d9ddd5; border-radius: 5px; outline: none; background: #fff; color: var(--ink); font-size: 13px; transition: border-color .18s, box-shadow .18s; }
+        textarea { min-height: 74px; resize: vertical; }
+        input:focus, select:focus, textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(20,116,91,.11); }
+        input::placeholder, textarea::placeholder { color: #a3a9a2; }
+        .field-hint { margin: 6px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
+        .divider { height: 1px; margin: 25px 0 22px; background: var(--line); }
+        .quote-panel { position: sticky; top: 20px; overflow: hidden; }
+        .quote-top { padding: 23px 23px 19px; border-bottom: 1px solid var(--line); }
+        .quote-label { margin: 0 0 5px; color: var(--muted); font: 500 10px "DM Mono", monospace; letter-spacing: .08em; text-transform: uppercase; }
+        .quote-number { margin: 0; font: 700 16px Manrope, sans-serif; }
+        .quote-body { padding: 20px 23px 22px; }
+        .line-item { display: flex; justify-content: space-between; gap: 15px; margin: 0 0 13px; color: #59625c; font-size: 12px; }
+        .line-item strong { color: var(--ink); font-weight: 600; text-align: right; }
+        .line-item small { display: block; margin-top: 3px; color: #8c938d; font-size: 10px; font-weight: 400; }
+        .total-box { display: flex; align-items: end; justify-content: space-between; margin-top: 20px; padding: 17px 0 16px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+        .total-label { color: var(--muted); font-size: 12px; }
+        .total-price { color: var(--green-dark); font: 800 29px/1 Manrope, sans-serif; white-space: nowrap; }
+        .unit-price { margin: 11px 0 0; color: var(--muted); font-size: 11px; }
+        .assumption { display: flex; gap: 9px; margin: 16px 0 18px; padding: 11px 12px; border-radius: 5px; background: #f3f4ef; color: #5e675f; font-size: 10px; line-height: 1.55; }
+        .assumption-mark { flex: 0 0 auto; color: var(--orange); font: 500 12px "DM Mono", monospace; }
+        .actions { display: grid; gap: 9px; }
+        .button { display: flex; min-height: 45px; align-items: center; justify-content: center; gap: 9px; border: 0; border-radius: 5px; font-size: 13px; font-weight: 700; transition: background .16s, transform .16s; }
+        .button:hover { transform: translateY(-1px); }
+        .button:active { transform: translateY(0); }
+        .button-primary { color: #fff; background: var(--green); }
+        .button-primary:hover { background: var(--green-dark); }
+        .button-secondary { color: var(--ink); border: 1px solid var(--line); background: transparent; }
+        .button-secondary:hover { background: #f5f6f1; }
+        .button:disabled { cursor: not-allowed; opacity: .48; transform: none; }
+        .whatsapp-icon { width: 17px; height: 17px; }
+        .setup-note { margin: 12px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; text-align: center; }
+        .setup-note strong { color: var(--orange); font-weight: 600; }
+        .fine-print { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; margin-top: 18px; color: #8b918b; font: 10px "DM Mono", monospace; }
+        .toast { position: fixed; right: 22px; bottom: 22px; z-index: 3; max-width: min(420px, calc(100vw - 44px)); padding: 13px 16px; border-radius: 5px; color: white; background: var(--ink); box-shadow: 0 8px 30px #202a2730; font-size: 13px; opacity: 0; transform: translateY(8px); pointer-events: none; transition: .2s; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        @media (max-width: 760px) {
+            .topbar { height: 58px; padding: 0 20px; }
+            main { width: min(100% - 32px, 540px); margin: 30px auto 48px; }
+            .intro { display: block; margin-bottom: 20px; }
+            .intro-copy { margin-top: 11px; }
+            .layout { grid-template-columns: 1fr; gap: 14px; }
+            .quote-panel { position: static; }
+            .form-panel { padding: 22px 19px; }
+            .quote-top { padding: 19px 19px 16px; }
+            .quote-body { padding: 18px 19px 20px; }
+            .fine-print { display: block; line-height: 1.8; }
+        }
+        @media (max-width: 420px) {
+            .fields { grid-template-columns: 1fr; gap: 13px; }
+            .field.full { grid-column: auto; }
+            .top-note { font-size: 9px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand"><span class="brand-mark">U.</span> UXIART <span class="top-note">/ COTIZACIONES</span></div>
+        <span class="top-note">PRECIOS EN MXN</span>
+    </header>
+    <main>
+        <section class="intro" aria-labelledby="page-title">
+            <div>
+                <p class="eyebrow">Personaliza tu pedido</p>
+                <h1 id="page-title">Cotiza tu camisa DTF</h1>
+            </div>
+            <p class="intro-copy">Elige la talla de tu diseño y la cantidad. Tu cotización se calcula al instante, sin cargos sorpresa.</p>
+        </section>
+        <div class="layout">
+            <form class="form-panel" id="quote-form">
+                <h2 class="section-heading"><span class="step">01</span> Datos de tu pedido</h2>
+                <div class="fields">
+                    <div class="field">
+                        <label for="customer-name">Tu nombre</label>
+                        <input id="customer-name" name="name" autocomplete="name" placeholder="Nombre completo" required>
+                    </div>
+                    <div class="field">
+                        <label for="customer-phone">Tu WhatsApp</label>
+                        <input id="customer-phone" name="phone" type="tel" autocomplete="tel" placeholder="10 dígitos" required>
+                    </div>
+                    <div class="field">
+                        <label for="shirt-size">Talla de camisa</label>
+                        <select id="shirt-size" name="shirtSize">
+                            <option value="CH">Chica (CH)</option>
+                            <option value="M" selected>Mediana (M)</option>
+                            <option value="G">Grande (G)</option>
+                            <option value="XG">Extra grande (XG)</option>
+                            <option value="XXG">2X grande (XXG)</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="shirt-color">Color de camisa</label>
+                        <select id="shirt-color" name="shirtColor">
+                            <option>Negro</option>
+                            <option>Blanco</option>
+                            <option>Azul marino</option>
+                            <option>Gris</option>
+                            <option>Rojo</option>
+                            <option>Otro / por confirmar</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="divider"></div>
+                <h2 class="section-heading"><span class="step">02</span> Impresión y cantidad</h2>
+                <div class="fields">
+                    <div class="field full">
+                        <label>Tamaño aproximado de los diseños</label>
+                        <div class="design-list" id="design-list"></div>
+                        <button class="button button-secondary add-design" type="button" id="add-design">+ Agregar diseño</button>
+                        <p class="field-hint">Cada diseño se imprime una vez por camisa y se suma al costo DTF.</p>
+                    </div>
+                    <div class="field">
+                        <label for="quantity">Cantidad de camisas</label>
+                        <input id="quantity" name="quantity" type="number" min="1" max="500" step="1" value="1" required>
+                        <p class="field-hint">Precio unitario incluye camisa, impresión y utilidad.</p>
+                    </div>
+                    <div class="field full">
+                        <label for="notes">Detalles del diseño <span style="font-weight:400;color:#858c85">(opcional)</span></label>
+                        <textarea id="notes" name="notes" maxlength="300" placeholder="Describe tu idea o comparte colores y ubicación de la impresión"></textarea>
+                    </div>
+                </div>
+            </form>
+            <aside class="quote-panel" aria-live="polite" aria-label="Resumen de cotización">
+                <div class="quote-top">
+                    <p class="quote-label">Resumen de cotización</p>
+                </div>
+                <div class="quote-body">
+                    <div class="line-item"><span>Camisas</span><strong id="quantity-label">1</strong></div>
+                    <div class="total-box"><span class="total-label">Costo final</span><strong class="total-price" id="total-price"></strong></div>
+                    <div class="actions">
+                        <button class="button button-primary" type="button" id="send-order">
+                            <svg class="whatsapp-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 3.5A11.8 11.8 0 0 0 12.1 0C5.6 0 .3 5.3.3 11.8c0 2.1.6 4.2 1.6 6L0 24l6.4-1.7a11.8 11.8 0 0 0 5.7 1.5h.1c6.5 0 11.8-5.3 11.8-11.8 0-3.2-1.2-6.2-3.5-8.5Zm-8.4 18.3h-.1c-1.8 0-3.6-.5-5.1-1.4l-.4-.2-3.8 1 1-3.7-.2-.4A9.7 9.7 0 0 1 2 11.8a10 10 0 0 1 17.1-7.1 10 10 0 0 1 3 7.1c0 5.5-4.5 10-10 10Zm5.5-7.5c-.3-.2-1.8-.9-2.1-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-1 1.2-.2.2-.4.2-.7.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.7l.5-.6c.2-.2.2-.3.3-.6.1-.2 0-.4 0-.6l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.8 0 1.7 1.2 3.3 1.4 3.5.2.2 2.4 3.7 5.8 5.1.8.3 1.4.5 1.8.6.8.2 1.5.2 2 .1.6-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.2-.3-.3-.6-.5Z"/></svg>
+                            Enviar pedido por WhatsApp
+                        </button>
+                        <button class="button button-secondary" type="button" id="contact-business">
+                            <svg class="whatsapp-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 3.5A11.8 11.8 0 0 0 12.1 0C5.6 0 .3 5.3.3 11.8c0 2.1.6 4.2 1.6 6L0 24l6.4-1.7a11.8 11.8 0 0 0 5.7 1.5h.1c6.5 0 11.8-5.3 11.8-11.8 0-3.2-1.2-6.2-3.5-8.5Zm-8.4 18.3h-.1c-1.8 0-3.6-.5-5.1-1.4l-.4-.2-3.8 1 1-3.7-.2-.4A9.7 9.7 0 0 1 2 11.8a10 10 0 0 1 17.1-7.1 10 10 0 0 1 3 7.1c0 5.5-4.5 10-10 10Zm5.5-7.5c-.3-.2-1.8-.9-2.1-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-1 1.2-.2.2-.4.2-.7.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.7l.5-.6c.2-.2.2-.3.3-.6.1-.2 0-.4 0-.6l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.8 0 1.7 1.2 3.3 1.4 3.5.2.2 2.4 3.7 5.8 5.1.8.3 1.4.5 1.8.6.8.2 1.5.2 2 .1.6-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.2-.3-.3-.6-.5Z"/></svg>
+                            Contactarme
+                        </button>
+                        <button class="button button-secondary" type="button" id="download-pdf">Descargar cotización PDF</button>
+                    </div>
+                    <p class="setup-note" id="whatsapp-note"></p>
+                </div>
+            </aside>
+        </div>
+        <div class="fine-print"><span>Precios expresados en pesos mexicanos (MXN).</span><span>Cotización estimada · Sujeta a confirmación del diseño.</span></div>
+    </main>
+    <div class="toast" id="toast" role="status"></div>
+    <script>
+        // Reemplaza el valor por el numero del negocio con codigo de pais, sin + ni espacios.
+        const BUSINESS_WHATSAPP = "523310800452";
+        const SHIRT_PRICE = 70;
+        const DTF_PRICE_PER_METER = 180;
+        const ROLL_WIDTH_CM = 60;
+        const PROFIT_PER_SHIRT = 100;
+        const sizes = {
+            "10x10": { width: 10, height: 10, label: "Logo pequeño · 10 × 10 cm" },
+            "20x25": { width: 20, height: 25, label: "Frente mediano · 20 × 25 cm" },
+            "25x30": { width: 25, height: 30, label: "Frente grande · 25 × 30 cm" },
+            "30x35": { width: 30, height: 35, label: "Espalda amplia · 30 × 35 cm" }
+        };
+        const form = document.getElementById("quote-form");
+        const designList = document.getElementById("design-list");
+        const money = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" });
+        const quoteId = `UX-${new Date().toISOString().slice(2, 10).replaceAll("-", "")}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+
+        function addDesign(size = "10x10") {
+            if (designList.children.length >= 8) {
+                showToast("Puedes agregar hasta 8 diseños por cotización.");
+                return;
+            }
+            const number = designList.children.length + 1;
+            const row = document.createElement("div");
+            row.className = "design-row";
+            const select = document.createElement("select");
+            select.className = "design-size";
+            select.setAttribute("aria-label", `Tamaño del diseño ${number}`);
+            for (const [value, design] of Object.entries(sizes)) {
+                const option = document.createElement("option");
+                option.value = value;
+                option.textContent = design.label;
+                option.selected = value === size;
+                select.append(option);
+            }
+            const remove = document.createElement("button");
+            remove.className = "remove-design";
+            remove.type = "button";
+            remove.textContent = "×";
+            remove.setAttribute("aria-label", `Quitar diseño ${number}`);
+            remove.title = "Quitar diseño";
+            row.append(select, remove);
+            designList.append(row);
+            remove.addEventListener("click", () => {
+                if (designList.children.length === 1) {
+                    showToast("La cotización necesita al menos un diseño.");
+                    return;
+                }
+                row.remove();
+                refreshDesignLabels();
+                updateQuote();
+            });
+            refreshDesignLabels();
+            updateQuote();
+        }
+
+        function refreshDesignLabels() {
+            designList.querySelectorAll(".design-row").forEach((row, index) => {
+                row.querySelector("select").setAttribute("aria-label", `Tamaño del diseño ${index + 1}`);
+                row.querySelector("button").setAttribute("aria-label", `Quitar diseño ${index + 1}`);
+            });
+        }
+
+        function getQuote() {
+            const quantity = Math.max(1, Math.min(500, Number(document.getElementById("quantity").value) || 1));
+            const designs = [...designList.querySelectorAll(".design-size")].map(select => sizes[select.value]);
+            const printCost = designs.reduce((total, design) => total + design.width * design.height / (ROLL_WIDTH_CM * 100) * DTF_PRICE_PER_METER, 0);
+            const unit = SHIRT_PRICE + printCost + PROFIT_PER_SHIRT;
+            return { quantity, designs, printCost, unit, total: unit * quantity };
+        }
+
+        function updateQuote() {
+            const quote = getQuote();
+            document.getElementById("quantity-label").textContent = `${quote.quantity} ${quote.quantity === 1 ? "camisa" : "camisas"}`;
+            document.getElementById("total-price").textContent = money.format(quote.total);
+        }
+
+        function orderDetails() {
+            const data = new FormData(form);
+            const quote = getQuote();
+            return {
+                name: data.get("name").trim(), phone: data.get("phone").trim(),
+                shirtSize: data.get("shirtSize"), shirtColor: data.get("shirtColor"),
+                notes: data.get("notes").trim(), ...quote
+            };
+        }
+
+        function pdfDocument(order) {
+            if (!window.jspdf) return null;
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFillColor(20, 116, 91);
+            doc.rect(0, 0, 210, 42, "F");
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(19);
+            doc.text("UXIART  /  COTIZACION DTF", 18, 23);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.text(`Folio: ${quoteId}`, 18, 33);
+            doc.text(`Fecha: ${new Intl.DateTimeFormat("es-MX", { dateStyle: "long" }).format(new Date())}`, 192, 33, { align: "right" });
+            doc.setTextColor(32, 42, 39);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text("DATOS DEL PEDIDO", 18, 59);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+            doc.text(`Cliente: ${order.name}`, 18, 70);
+            doc.text(`WhatsApp: ${order.phone}`, 18, 79);
+            doc.text(`Camisa: Hombre / ${order.shirtSize} / ${order.shirtColor}`, 18, 88);
+            const designSummary = order.designs.map((design, index) => `${index + 1}) ${design.width} x ${design.height} cm`).join(", ");
+            doc.text(doc.splitTextToSize(`Disenos: ${designSummary}`, 174), 18, 97);
+            doc.text(`Cantidad: ${order.quantity}`, 18, 106);
+            doc.setDrawColor(220, 224, 217);
+            doc.line(18, 118, 192, 118);
+            doc.setFont("helvetica", "bold");
+            doc.text("CONCEPTO", 18, 131);
+            doc.text("IMPORTE", 192, 131, { align: "right" });
+            doc.setFont("helvetica", "normal");
+            doc.text(`Camisas (${order.quantity} x ${money.format(SHIRT_PRICE)})`, 18, 143);
+            doc.text(money.format(SHIRT_PRICE * order.quantity), 192, 143, { align: "right" });
+            doc.text(`Impresion DTF (${order.designs.length} diseno${order.designs.length === 1 ? "" : "s"})`, 18, 153);
+            doc.text(money.format(order.printCost * order.quantity), 192, 153, { align: "right" });
+            doc.text(`Utilidad (${order.quantity} x ${money.format(PROFIT_PER_SHIRT)})`, 18, 163);
+            doc.text(money.format(PROFIT_PER_SHIRT * order.quantity), 192, 163, { align: "right" });
+            doc.setDrawColor(20, 116, 91);
+            doc.line(18, 172, 192, 172);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.text("TOTAL", 18, 185);
+            doc.text(money.format(order.total), 192, 185, { align: "right" });
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(100, 108, 101);
+            doc.text(`Precio unitario: ${money.format(order.unit)} MXN`, 18, 195);
+            if (order.notes) {
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(32, 42, 39);
+                doc.text("Detalles del diseno:", 18, 211);
+                doc.setFont("helvetica", "normal");
+                doc.setTextColor(100, 108, 101);
+                doc.text(doc.splitTextToSize(order.notes, 174), 18, 219);
+            }
+            doc.setFontSize(9);
+            doc.setTextColor(130, 137, 130);
+            doc.text("Estimacion basada en rollo DTF de 60 cm a $180 MXN por metro lineal. Cotizacion sujeta a confirmacion del diseno.", 18, 278, { maxWidth: 174 });
+            return doc;
+        }
+
+        function downloadPdf(order) {
+            const doc = pdfDocument(order);
+            if (!doc) return false;
+            doc.save(`Cotizacion-${quoteId}.pdf`);
+            return true;
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.classList.add("show");
+            window.setTimeout(() => toast.classList.remove("show"), 3500);
+        }
+
+        form.addEventListener("input", updateQuote);
+        form.addEventListener("change", updateQuote);
+        document.getElementById("add-design").addEventListener("click", () => addDesign());
+        document.getElementById("contact-business").addEventListener("click", () => {
+            const message = encodeURIComponent("Hola, quiero información sobre las camisas DTF de UXIART.");
+            window.open(`https://wa.me/${BUSINESS_WHATSAPP}?text=${message}`, "_blank", "noopener,noreferrer");
+        });
+        document.getElementById("download-pdf").addEventListener("click", () => {
+            if (!form.reportValidity()) return;
+            if (!downloadPdf(orderDetails())) showToast("No se pudo cargar el generador PDF. Revisa tu conexión e inténtalo de nuevo.");
+            else showToast("Cotización PDF descargada.");
+        });
+        document.getElementById("send-order").addEventListener("click", () => {
+            if (!form.reportValidity()) return;
+            if (BUSINESS_WHATSAPP.includes("X")) {
+                showToast("Configura el número del negocio en BUSINESS_WHATSAPP antes de recibir pedidos.");
+                return;
+            }
+            const order = orderDetails();
+            if (!downloadPdf(order)) {
+                showToast("No se pudo generar el PDF. Revisa tu conexión e inténtalo de nuevo.");
+                return;
+            }
+            const lines = [
+                `Hola, quiero confirmar este pedido (${quoteId}):`,
+                `Cliente: ${order.name} | WhatsApp: ${order.phone}`,
+                `Camisa de hombre: ${order.shirtSize}, color ${order.shirtColor}`,
+                `Diseños: ${order.designs.map((design, index) => `${index + 1}) ${design.width} x ${design.height} cm`).join(", ")}`,
+                `Cantidad: ${order.quantity}`,
+                `Precio unitario: ${money.format(order.unit)} MXN`,
+                `Total estimado: ${money.format(order.total)} MXN`,
+                order.notes ? `Detalles: ${order.notes}` : "",
+                "Adjunto la cotización en PDF."
+            ].filter(Boolean).join("\n");
+            window.open(`https://wa.me/${BUSINESS_WHATSAPP}?text=${encodeURIComponent(lines)}`, "_blank", "noopener,noreferrer");
+            showToast("PDF descargado. Adjunta el archivo en WhatsApp para enviar la cotización.");
+        });
+
+        document.getElementById("whatsapp-note").textContent = "WhatsApp UXIART · +52 33 1080 0452";
+        addDesign("25x30");
+        updateQuote();
+    </script>
+</body>
+</html>
